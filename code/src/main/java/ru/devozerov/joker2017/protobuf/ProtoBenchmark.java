@@ -23,10 +23,10 @@ public class ProtoBenchmark {
     /** Cached size-optimized instance. */
     private PersonSizeMessage.PersonSize size;
 
-    /** Cache speed-optimized instance. */
+    /** Cached speed-optimized instance. */
     private PersonSpeedMessage.PersonSpeed speed;
 
-    /** Cache serialized data. */
+    /** Cached serialized data. */
     private byte[] data;
 
     @Setup
@@ -36,14 +36,14 @@ public class ProtoBenchmark {
 
         data = size.toByteArray();
 
-        // Make sure that both objects are serialized in the same way.
+        // Make sure both objects are serialized in the same way.
         if (!Arrays.equals(data, speed.toByteArray()))
             throw new RuntimeException("Size-optimized and speed-optimized arrays are not equal!");
     }
 
     /*
-     * Test instance creation performance. Size-optimized message performs worse due to reflective calls on final
-     * build stage. Set a breakpoint inside Person[Size|Speed]Message.Person[Size|Speed].Builder#build() on a line
+     * Test instance creation performance. Size-optimized message performs worse due to reflective calls on the final
+     * build stage. Set a breakpoint inside Person[Size|Speed]Message.Person[Size|Speed].Builder#build() on the line
      * with result.isInitialized() call to see the difference.
      */
 
@@ -58,7 +58,7 @@ public class ProtoBenchmark {
     }
 
     /*
-     * Compare build+serialize scenario.
+     * Compare build + serialize scenario.
      */
 
     @Benchmark
