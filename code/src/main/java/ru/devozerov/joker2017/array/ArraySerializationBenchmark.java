@@ -45,6 +45,10 @@ public class ArraySerializationBenchmark {
             data[i] = i;
     }
 
+    /**
+     * Naive approach: create ByteArrayOutputStream, wrap it with DataOutputStream and write elements
+     * one by one in portable big-endian format (i.e. byte-by-byte).
+     */
     @Benchmark
     public byte[] serializeNormal() throws Exception {
         ByteArrayOutputStream res = new ByteArrayOutputStream(data.length * 4);
@@ -57,15 +61,28 @@ public class ArraySerializationBenchmark {
         return res.toByteArray();
     }
 
+    /**
+     * Optimized approach: reverse bytes in all elements to mimic "portability" from naive approach, then copy
+     * temporary array to output stream in one hop using Unsafe, then shift output stream position manually.
+     * Even though we loose time on intermediate array, this approach is order of magnitude faster than "naive"
+     * counterpart.
+     */
     @Benchmark
     public byte[] serializeOptimized() throws Exception {
-        HackedByteArrayOutputStream res = new HackedByteArrayOutputStream(data.length * 4);
+        int[] tmp = new int[data.length];
+
+        for (int i = 0; i < data.length; i++)
+            tmp[i] = Integer.reverseBytes(data[i]);
+
+        HackedByteArrayOutputStream res = new HackedByteArrayOutputStream(tmp.length * 4);
+
+        res.ensure(tmp.length * 4);
 
         byte[] buf = res.buffer();
 
-        UNSAFE.copyMemory(data, INT_ARR_OFF, buf, BYTE_ARR_OFF, data.length * 4);
+        UNSAFE.copyMemory(tmp, INT_ARR_OFF, buf, BYTE_ARR_OFF, tmp.length * 4);
 
-        res.shiftCount(data.length * 4);
+        res.shiftCount(tmp.length * 4);
 
         return res.toByteArray();
     }
@@ -118,6 +135,20 @@ public class ArraySerializationBenchmark {
          */
         HackedByteArrayOutputStream(int size) {
             super(size);
+        }
+
+        void ensure(int expected) {
+            int remaining = buf.length - count;
+
+            if (remaining < expected) {
+                int newCap = count + expected;
+
+                byte[] newBuf = new byte[newCap];
+
+                System.arraycopy(buf, 0, newBuf, 0, count);
+
+                buf = newBuf;
+            }
         }
 
         byte[] buffer() {
