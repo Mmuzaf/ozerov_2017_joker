@@ -13,62 +13,20 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import ru.devozerov.joker2017.protobuf.generated.PersonSizeMessage;
 import ru.devozerov.joker2017.protobuf.generated.PersonSpeedMessage;
 
-import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
+@SuppressWarnings("unused")
 @State(Scope.Benchmark)
 @Warmup(iterations = 10)
 @Measurement(iterations = 10)
 @Fork(value = 1)
 public class ProtoBenchmark {
-    /** Cached size-optimized instance. */
-    private PersonSizeMessage.PersonSize size;
-
-    /** Cached speed-optimized instance. */
-    private PersonSpeedMessage.PersonSpeed speed;
-
     /** Cached serialized data. */
     private byte[] data;
 
     @Setup
     public void setup() {
-        size = createSize();
-        speed = createSpeed();
-
-        data = size.toByteArray();
-
-        // Make sure both objects are serialized in the same way.
-        if (!Arrays.equals(data, speed.toByteArray()))
-            throw new RuntimeException("Size-optimized and speed-optimized arrays are not equal!");
-    }
-
-    /*
-     * Test instance creation performance. Size-optimized message performs worse due to reflective calls on the final
-     * build stage. Set a breakpoint inside Person[Size|Speed]Message.Person[Size|Speed].Builder#build() on the line
-     * with result.isInitialized() call to see the difference.
-     */
-
-    @Benchmark
-    public Object buildSize() throws Exception {
-        return createSize();
-    }
-
-    @Benchmark
-    public Object buildSpeed() throws Exception {
-        return createSpeed();
-    }
-
-    /*
-     * Compare build + serialize scenario.
-     */
-
-    @Benchmark
-    public Object buildAndSerializeSize() throws Exception {
-        return createSize().toByteArray();
-    }
-
-    @Benchmark
-    public Object buildAndSerializeSpeed() throws Exception {
-        return createSpeed().toByteArray();
+        data = createSize().toByteArray();
     }
 
     /*
@@ -77,12 +35,12 @@ public class ProtoBenchmark {
 
     @Benchmark
     public Object serializeSize() throws Exception {
-        return size.toByteArray();
+        return createSize().toByteArray();
     }
 
     @Benchmark
     public Object serializeSpeed() throws Exception {
-        return speed.toByteArray();
+        return createSpeed().toByteArray();
     }
 
     /*
@@ -103,14 +61,18 @@ public class ProtoBenchmark {
      * @return New size-optimized instance.
      */
     private PersonSizeMessage.PersonSize createSize() {
-        return PersonSizeMessage.PersonSize.newBuilder().setId(1234).setName("John Doe").build();
+        int val = ThreadLocalRandom.current().nextInt(1000, 10000);
+
+        return PersonSizeMessage.PersonSize.newBuilder().setId(val).setName(String.valueOf(val)).build();
     }
 
     /**
      * @return New speed-optimized instance.
      */
     private PersonSpeedMessage.PersonSpeed createSpeed() {
-        return PersonSpeedMessage.PersonSpeed.newBuilder().setId(1234).setName("John Doe").build();
+        int val = ThreadLocalRandom.current().nextInt(1000, 10000);
+
+        return PersonSpeedMessage.PersonSpeed.newBuilder().setId(val).setName(String.valueOf(val)).build();
     }
 
     /**
