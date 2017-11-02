@@ -18,7 +18,6 @@ import java.lang.reflect.Field;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 
 @SuppressWarnings("unused")
 @State(Scope.Benchmark)
